@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>[Male Character] & [Female Character] - A Love Story</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+Devanagari:wght@400;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: white;
+            font-family: 'Press Start 2P', 'Noto Sans Devanagari', cursive;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Canvas Container */
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: pixelated;
+        }
+
+        /* Control Panel - Always Visible */
+        #control-panel {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            padding: 10px;
+            border-top: 3px solid #e94560;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 45vh;
+            overflow-y: auto;
+        }
+
+        /* Directional Pad */
+        #dpad-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 5px;
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 5px;
+        }
+
+        .dpad-btn {
+            background: linear-gradient(145deg, #2d3561, #1a1f3a);
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.1s;
+            box-shadow: 0 4px 0 #1a1f3a;
+        }
+
+        .dpad-btn:active, .dpad-btn.pressed {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #1a1f3a;
+            background: #e94560;
+            border-color: #ff6b6b;
+        }
+
+        .dpad-up { grid-column: 2; grid-row: 1; }
+        .dpad-left { grid-column: 1; grid-row: 2; }
+        .dpad-right { grid-column: 3; grid-row: 2; }
+        .dpad-down { grid-column: 2; grid-row: 3; }
+
+        /* Action Buttons */
+        #action-section {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: linear-gradient(145deg, #e94560, #c73e54);
+            border: 3px solid #ff6b6b;
+            border-radius: 15px;
+            color: white;
+            padding: 15px 20px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 5px 0 #8b2635;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .action-btn:active, .action-btn.pressed {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #8b2635;
+        }
+
+        .action-btn.secondary {
+            background: linear-gradient(145deg, #0f3460, #0a2548);
+            border-color: #533483;
+            box-shadow: 0 5px 0 #0a2548;
+        }
+
+        .action-btn.hint {
+            background: linear-gradient(145deg, #f39c12, #d68910);
+            border-color: #f1c40f;
+            box-shadow: 0 5px 0 #9c640c;
+        }
+
+        .action-btn.tutorial {
+            background: linear-gradient(145deg, #27ae60, #229954);
+            border-color: #2ecc71;
+            box-shadow: 0 5px 0 #1e8449;
+        }
+
+        /* Status Bar */
+        #status-bar {
+            background: rgba(0,0,0,0.8);
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .level-indicator {
+            color: #ffd700;
+        }
+
+        .objective {
+            color: #4ecdc4;
+            font-size: 9px;
+        }
+
+        /* Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .overlay h1 {
+            color: #e94560;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 3px 3px 0 #8b2635;
+            line-height: 1.5;
+        }
+
+        .overlay h2 {
+            color: #ffd700;
+            font-size: 14px;
+            margin: 15px 0 10px;
+        }
+
+        .overlay p, .overlay li {
+            font-size: 10px;
+            line-height: 1.8;
+            color: #eee;
+            max-width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .overlay ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .overlay .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .story-text {
+            font-size: 11px;
+            line-height: 2;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        /* Dialogue Box */
+        #dialogue-box {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: linear-gradient(180deg, #1a1a2e, #0f0f1e);
+            border: 3px solid #e94560;
+            border-radius: 10px;
+            padding: 15px;
+            display: none;
+            z-index: 50;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+        }
+
+        #dialogue-box.active {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        #dialogue-speaker {
+            color: #ffd700;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #dialogue-speaker::before {
+            content: "👤";
+            font-size: 20px;
+        }
+
+        #dialogue-text {
+            color: white;
+            font-size: 10px;
+            line-height: 1.6;
+            min-height: 40px;
+        }
+
+        #dialogue-hint {
+            text-align: right;
+            font-size: 9px;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        /* Tutorial Modal */
+        #tutorial-modal .tutorial-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        #tutorial-modal h3 {
+            color: #4ecdc4;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .control-demo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            font-size: 10px;
+        }
+
+        .key-demo {
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #666;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* Hint Box */
+        #hint-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(180deg, #f39c12, #d68910);
+            border: 3px solid #f1c40f;
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 90%;
+            display: none;
+            z-index: 60;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #hint-box.active {
+            display: block;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: translate(-50%, -50%) scale(0.8); }
+            to { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        #hint-text {
+            font-size: 11px;
+            line-height: 1.8;
+            color: #000;
+            margin-bottom: 15px;
+        }
+
+        /* MCQ Modal */
+        #mcq-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 70;
+            overflow-y: auto;
+        }
+
+        #mcq-modal.active {
+            display: flex;
+        }
+
+        .mcq-question {
+            color: #ffd700;
+            font-size: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .mcq-option {
+            background: linear-gradient(145deg, #2d3561, #1a1f3a);
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 8px 0;
+            width: 100%;
+            max-width: 350px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+
+        .mcq-option:hover, .mcq-option:active {
+            background: #e94560;
+            border-color: #ff6b6b;
+            transform: translateX(10px);
+        }
+
+        .mcq-progress {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .mcq-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ffd700);
+            transition: width 0.3s;
+        }
+
+        /* Responsive adjustments */
+        @media (max-height: 700px) {
+            .dpad {
+                grid-template-columns: repeat(3, 50px);
+                grid-template-rows: repeat(3, 50px);
+            }
+            .dpad-btn {
+                font-size: 20px;
+            }
+            .action-btn {
+                padding: 12px 15px;
+                font-size: 10px;
+            }
+        }
+
+        @media (max-height: 600px) {
+            #control-panel {
+                max-height: 50vh;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <!-- Status Bar -->
+    <div id="status-bar">
+        <span class="level-indicator">LEVEL <span id="current-level">1</span>/3</span>
+        <span class="objective" id="current-objective">Collect Letters</span>
+        <span id="letters-count" style="color: #ffd700;">0/14</span>
+    </div>
+
+    <!-- Canvas Area -->
+    <div id="canvas-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Dialogue Box -->
+        <div id="dialogue-box">
+            <div id="dialogue-speaker">[Male Character]</div>
+            <div id="dialogue-text">Welcome to our story...</div>
+            <div id="dialogue-hint">▼ Press NEXT or SPACE to continue</div>
+        </div>
+
+        <!-- Hint Box -->
+        <div id="hint-box">
+            <div id="hint-text">Hint goes here...</div>
+            <button class="action-btn" onclick="game.closeHint()">Got it!</button>
+        </div>
+
+        <!-- Intro Screen -->
+        <div id="intro-screen" class="overlay active">
+            <h1>❤️ A Story of Love & Regret ❤️</h1>
+            <div class="story-text" id="intro-text"></div>
+            <div class="btn-row">
+                <button class="action-btn tutorial" onclick="game.showTutorial()">📖 Tutorial</button>
+                <button class="action-btn" onclick="game.startGame()">▶️ Start Game</button>
+            </div>
+        </div>
+
+        <!-- Tutorial Modal -->
+        <div id="tutorial-modal" class="overlay">
+            <h1>🎮 How to Play</h1>
+            
+            <div class="tutorial-section">
+                <h3>Controls</h3>
+                <div class="control-demo">
+                    <span class="key-demo">⬆️⬇️⬅️➡️</span>
+                    <span>Arrow buttons to move character</span>
+                </div>
+                <div class="control-demo">
+                    <span class="key-demo">🅰️ ACTION</span>
+                    <span>Talk, interact, or shoot hearts</span>
+                </div>
+                <div class="control-demo">
+                    <span class="key-demo">❓ HINT</span>
+                    <span>Get help when stuck</span>
+                </div>
+                <div class="control-demo">
+                    <span class="key-demo">📖 GUIDE</span>
+                    <span>View full game guide</span>
+                </div>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>Level 1: Sunlit Park ☀️</h3>
+                <p>Collect all 14 letters (A-B-C-D-E-F-G-H-I-J-K-L-M-N). Find the pink flower to remove thorns. Meet [Male Character] at the end.</p>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>Level 2: Stormy Maze ⛈️</h3>
+                <p>Shoot dark clouds with love hearts (press ACTION). Clear all enemies, then meet [Male Character]   .</p>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>Level 3: Bridge of Promises 🌉</h3>
+                <p>Answer 5 questions to build the bridge. Cross and watch the final scene.</p>
+            </div>
+
+            <div class="btn-row">
+                <button class="action-btn" onclick="game.hideTutorial()">Back</button>
+                <button class="action-btn" onclick="game.startGame()">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Level Start Alert -->
+        <div id="level-alert" class="overlay">
+            <h1 id="alert-title">Level 1</h1>
+            <p id="alert-text">Level description...</p>
+            <div class="btn-row">
+                <!-- The text of this button is updated dynamically in startLevel() to match the current level -->
+                <button class="action-btn tutorial" id="level-guide-btn" onclick="game.showLevelGuide()">📖 Level 1 Guide</button>
+                <button class="action-btn" onclick="game.dismissAlert()">Play ▶️</button>
+            </div>
+        </div>
+
+        <!-- Level Guide Modal -->
+        <div id="level-guide" class="overlay">
+            <h1 id="guide-title">Level Guide</h1>
+            <div id="guide-content" style="max-height: 60vh; overflow-y: auto; width: 100%;"></div>
+            <div class="btn-row">
+                <button class="action-btn" onclick="game.hideLevelGuide()">Back</button>
+            </div>
+        </div>
+
+        <!-- MCQ Modal -->
+        <div id="mcq-modal">
+            <div class="mcq-progress">
+                <div class="mcq-progress-fill" id="mcq-progress" style="width: 0%"></div>
+            </div>
+            <div class="mcq-question" id="mcq-question">Question?</div>
+            <div id="mcq-options"></div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="overlay">
+            <h1 id="end-title">The End</h1>
+            <p id="end-text" style="text-align: center; line-height: 1.8;"></p>
+            <div class="btn-row" id="end-choices">
+                <button class="action-btn" onclick="game.makeChoice(true)">❤️ I Forgive You</button>
+                <button class="action-btn secondary" onclick="game.makeChoice(false)">⏳ Give Time</button>
+            </div>
+            <div class="btn-row" id="end-restart" style="display: none;">
+                <button class="action-btn" onclick="game.restart()">🔄 Play Again</button>
+            </div>
+        </div>
+
+        <!-- Pause/Guide Modal -->
+        <div id="pause-modal" class="overlay">
+            <h1>📖 Game Guide</h1>
+            <div id="guide-full" style="width: 100%; max-height: 60vh; overflow-y: auto;"></div>
+            <div class="btn-row">
+                <button class="action-btn" onclick="game.resume()">Resume Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div id="control-panel">
+        <!-- D-Pad -->
+        <div id="dpad-section">
+            <div class="dpad">
+                <button class="dpad-btn dpad-up" id="btn-up">⬆️</button>
+                <button class="dpad-btn dpad-left" id="btn-left">⬅️</button>
+                <button class="dpad-btn dpad-right" id="btn-right">➡️</button>
+                <button class="dpad-btn dpad-down" id="btn-down">⬇️</button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div id="action-section">
+            <button class="action-btn" id="btn-action" onclick="game.actionButton()">🅰️ ACTION</button>
+            <button class="action-btn hint" onclick="game.showHint()">❓ HINT</button>
+            <button class="action-btn tutorial" onclick="game.showGuide()">📖 GUIDE</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ============================================================
+ *  RPG LOVE STORY GAME
+ *  [Male Character] & [Female Character] - A Love Story
+ * ============================================================
+ *  Built with vanilla JavaScript + HTML5 Canvas (no libraries).
+ *
+ *  NOTE: Some of the core game logic patterns (collision detection,
+ *  typewriter dialogue, projectile system, MCQ bridge mechanic)
+ *  were designed with the assistance of AI (Claude by Anthropic).
+ *  Generic comments and structural patterns were also AI-suggested,
+ *  then customised for this specific story. Open source on GitHub —
+ *  feel free to fork, remix, and make it your own love story! 💕
+ *
+ *  STRUCTURE:
+ *  1. Canvas + constants setup
+ *  2. Input state
+ *  3. Game data + state machine
+ *  4. Level guides (customisable text)
+ *  5. Player class  — movement, animation, rendering
+ *  6. Level class   — setup, walls, collectibles, enemies, drawing
+ *  7. Dialogue system — typewriter effect, queue, DOM caching
+ *  8. MCQ system    — quiz questions that build the bridge
+ *  9. Game object   — init, startGame, startLevel, actionButton, loop
+ *  10. Utility functions
+ *  11. Button setup
+ * ============================================================
+ */
+
+// ── Canvas setup ────────────────────────────────────────────
+// We grab the canvas element and its 2D drawing context.
+// All rendering happens through `ctx`.
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// ── Game Constants ───────────────────────────────────────────
+// GAME_WIDTH / GAME_HEIGHT define the fixed pixel resolution of
+// the game world. The CSS scales the canvas to fit any screen
+// while keeping the pixel-art look sharp.
+const GAME_WIDTH = 360;
+const GAME_HEIGHT = 320;
+const TILE_SIZE = 20; // Size of each wall/floor tile in pixels
+
+// Fix canvas size to match our game world resolution
+canvas.width = GAME_WIDTH;
+canvas.height = GAME_HEIGHT;
+
+// ── Game State Enum ──────────────────────────────────────────
+// All possible game states. Only one state is active at a time.
+// The game loop checks this to decide what to update/draw.
+const STATE = {
+    INTRO: 0,        // Showing the intro screen / typewriter story
+    TUTORIAL: 1,     // Tutorial overlay is open
+    LEVEL_START: 2,  // Level start alert is shown (before gameplay)
+    PLAYING: 3,      // Active gameplay — player can move and interact
+    DIALOGUE: 4,     // A dialogue box is open; player input advances it
+    MCQ: 5,          // MCQ quiz is open (Level 3 bridge builder)
+    PAUSED: 6,       // Hint or guide modal is open
+    END: 7           // End screen with the final choice
+};
+
+// ── Input State ──────────────────────────────────────────────
+// Tracks which directional buttons are currently held down.
+// Both keyboard (keydown/keyup) and on-screen buttons write here.
+// The player's update() reads this every frame.
+const input = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    action: false // Not used for hold; action fires on press via actionButton()
+};
+
+// ── Game Data ────────────────────────────────────────────────
+// Central state object shared across all systems.
+const gameData = {
+    state: STATE.INTRO,   // Start on the intro screen
+    level: 1,             // Current level number (1–3)
+    player: null,         // Will hold the Player instance once game starts
+    levelData: null,      // Will hold the Level instance for the active level
+    particles: [],        // Global particle array (unused currently, reserved)
+    screenShake: 0,       // Current screen shake intensity (decays each frame)
+    lastTime: 0           // Timestamp of last frame (for delta-time calculation)
+};
+
+// ── Level Guides ─────────────────────────────────────────────
+// Each level has a guide object shown in the Level Start alert
+// and the in-game GUIDE button modal. Edit these freely —
+// change titles, objectives, steps, and tips to fit your story.
+const levelGuides = {
+    1: {
+        title: "Level 1: Sunlit Park ☀️",
+        // YOU CAN CHANGE THE THE NUMBER OF LETTERS TO TEST THE HINT FOR COLLECTING ALL LETTERS
+        objective: "Collect all 14 letters and meet [Male Character]",
+        steps: [
+            "Use arrow buttons (⬆️⬇️⬅️➡️) to move [Female Character]",
+            "Walk over golden letters to collect them (A-B-C-D-E-F-G-H-I-J-K-L-M-N)",
+            "Find the pink flower 🌸 (usually near bottom area)",
+            "Take flower to the thorny vine blocking the right side",
+            "Press ACTION (🅰️) near vine to remove it",
+            "Walk to [Male Character] and press ACTION to talk",
+            "Listen to the story and proceed to Level 2"
+        ],
+        tips: "Collect letters in any order. The flower shines and floats!"
+    },
+    2: {
+        title: "Level 2: Stormy Maze ⛈️",
+        objective: "Defeat all dark clouds and reach [Male Character]",
+        steps: [
+            "Navigate through the maze using arrow buttons",
+            "Dark clouds (👿) are enemies - avoid touching them",
+            "Press ACTION (🅰️) to shoot pink love hearts",
+            "Hit clouds 2 times to destroy them",
+            "Destroy all 5 clouds in the maze",
+            "Reach [Male Character] at bottom-right corner",
+            "Press ACTION to talk and proceed"
+        ],
+        tips: "You can shoot through walls! Keep moving while shooting."
+    },
+    3: {
+        title: "Level 3: Bridge of Promises 🌉",
+        objective: "Answer questions and witness the finale",
+        steps: [
+            "Walk to the cyan '?' block (terminal)",
+            "Press ACTION to start the quiz",
+            "Answer 5 questions about your relationship",
+            "Each correct answer builds part of the bridge",
+            "Wrong answers shake screen - try again!",
+            "Cross the bridge after all 5 questions",
+            "Watch the final cutscene",
+            "Make your choice: Forgive or Wait"
+        ],
+        tips: "Questions are about your memories together. Think carefully!"
+    }
+};
+
+// currentHint holds the text shown when the player taps the ❓ HINT button.
+// It is updated throughout gameplay as the situation changes.
+let currentHint = "";
+
+// ============================================================
+// PLAYER CLASS
+// Represents the female character (the protagonist).
+// Handles movement, collision-aware physics, walk animation,
+// inventory (letters + flower), shoot cooldown, and rendering.
+// AI-assisted pattern: diagonal normalisation and axis-split
+// collision resolution are generic techniques suggested by AI.
+// ============================================================
+class Player {
+    constructor(x, y) {
+        this.x = x;         // World X position (top-left of sprite)
+        this.y = y;         // World Y position
+        this.w = 18;        // Sprite width in pixels
+        this.h = 22;        // Sprite height in pixels
+        this.speed = 1.6;   // Pixels per frame — reduced from 2.5 for a natural pace
+        this.vx = 0;        // Horizontal velocity this frame
+        this.vy = 0;        // Vertical velocity this frame
+        this.facing = 1;    // Sprite direction: 1 = right, -1 = left (used for flip)
+        this.frame = 0;     // Walk animation frame (0 or 1)
+        this.animTimer = 0; // Counts frames between animation steps
+        this.hasFlower = false; // True once the pink flower collectible is picked up
+        this.letters = [];      // Array of collected letter strings (e.g. ['A','B',...])
+        this.shootCooldown = 0; // Frames remaining before next projectile can be fired
+    }
+
+    update() {
+        // Movement
+        let dx = 0;
+        let dy = 0;
+
+        if (input.up) dy = -1;
+        if (input.down) dy = 1;
+        if (input.left) dx = -1;
+        if (input.right) dx = 1;
+
+        // Normalise diagonal movement so diagonal speed == cardinal speed
+        if (dx !== 0 || dy !== 0) {
+            const len = Math.sqrt(dx*dx + dy*dy);
+            dx /= len;
+            dy /= len;
+            // Only update facing when there's horizontal input (prevents flip on vertical move)
+            if (dx !== 0) this.facing = dx > 0 ? 1 : -1;
+            this.animTimer++;
+        }
+
+        this.vx = dx * this.speed;
+        this.vy = dy * this.speed;
+
+        // Axis-split collision — check X and Y separately so player slides along walls
+        const nextX = this.x + this.vx;
+        const nextY = this.y + this.vy;
+
+        if (!gameData.levelData.checkWall(nextX, this.y, this.w, this.h)) {
+            this.x = nextX;
+        }
+        if (!gameData.levelData.checkWall(this.x, nextY, this.w, this.h)) {
+            this.y = nextY;
+        }
+
+        // Clamp to canvas bounds so player can never leave the screen
+        this.x = Math.max(0, Math.min(GAME_WIDTH - this.w, this.x));
+        this.y = Math.max(0, Math.min(GAME_HEIGHT - this.h, this.y));
+
+        // Advance walk animation every 8 frames
+        if (this.animTimer > 8) {
+            this.frame = (this.frame + 1) % 2;
+            this.animTimer = 0;
+        }
+
+        if (this.shootCooldown > 0) this.shootCooldown--;
+    }
+
+    draw(ctx) {
+        const bob = this.frame * 2;
+        
+        ctx.save();
+        ctx.translate(this.x + this.w/2, this.y);
+        if (this.facing === -1) ctx.scale(-1, 1);
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(0, 22, 10, 3, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        // Body (dress)
+        ctx.fillStyle = '#FF69B4';
+        ctx.fillRect(-8, 5 + bob, 16, 14);
+
+        // Head
+        ctx.fillStyle = '#FDBCB4';
+        ctx.fillRect(-7, -10 + bob, 14, 14);
+
+        // Hair
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(-9, -14 + bob, 18, 8);
+        ctx.fillRect(-9, -10 + bob, 3, 12);
+        ctx.fillRect(6, -10 + bob, 3, 12);
+
+        // Eyes
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-3, -4 + bob, 2, 2);
+        ctx.fillRect(1, -4 + bob, 2, 2);
+
+        // Blush
+        ctx.fillStyle = '#FFB6C1';
+        ctx.fillRect(-5, 0 + bob, 2, 1);
+        ctx.fillRect(3, 0 + bob, 2, 1);
+
+        // Arms
+        ctx.fillStyle = '#FDBCB4';
+        const armOff = this.frame === 1 ? 2 : 0;
+        ctx.fillRect(-11, 2 + bob + armOff, 3, 10);
+        ctx.fillRect(8, 2 + bob - armOff, 3, 10);
+
+        // Legs
+        ctx.fillStyle = '#FDBCB4';
+        const legOff = this.frame === 1 ? 2 : -2;
+        ctx.fillRect(-5, 18 + bob + legOff, 3, 6);
+        ctx.fillRect(2, 18 + bob - legOff, 3, 6);
+
+        ctx.restore();
+    }
+
+    getCenter() {
+        return {x: this.x + this.w/2, y: this.y + this.h/2};
+    }
+}
+
+// ============================================================
+// LEVEL CLASS
+// Creates and manages one level's entire game world:
+//   - Boundary + decorative walls
+//   - Collectibles (letters, flower in L1)
+//   - Enemies (storm clouds in L2)
+//   - Projectiles fired by the player
+//   - NPCs (male character appearances)
+//   - Special objects: vine, chasm, terminal, boss
+//
+// Each level calls its own setupLevelN() method.
+// update() runs every frame during STATE.PLAYING.
+// draw(ctx) renders everything to the canvas.
+// ============================================================
+class Level {
+    constructor(num) {
+        this.num = num;
+        this.walls = [];
+        this.collectibles = [];
+        this.enemies = [];
+        this.projectiles = [];
+        this.particles = [];
+        this.npc = null;
+        this.npc2 = null;
+        this.vine = null;
+        this.terminal = null;
+        this.chasm = null;
+        this.bridgeBlocks = 0;
+        this.complete = false;
+        this.bossDefeated = false;
+        this.bridgeComplete = false;
+        
+        this.setup();
+    }
+
+    setup() {
+        // Boundaries
+        for (let x = 0; x < GAME_WIDTH; x += TILE_SIZE) {
+            this.walls.push({x, y: 0, w: TILE_SIZE, h: TILE_SIZE});
+            this.walls.push({x, y: GAME_HEIGHT - TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE});
+        }
+        for (let y = 0; y < GAME_HEIGHT; y += TILE_SIZE) {
+            this.walls.push({x: 0, y, w: TILE_SIZE, h: TILE_SIZE});
+            this.walls.push({x: GAME_WIDTH - TILE_SIZE, y, w: TILE_SIZE, h: TILE_SIZE});
+        }
+
+        if (this.num === 1) this.setupLevel1();
+        else if (this.num === 2) this.setupLevel2();
+        else if (this.num === 3) this.setupLevel3();
+    }
+
+    setupLevel1() {
+        // Decorative walls
+        for (let i = 0; i < 5; i++) {
+            this.walls.push({x: 60 + i * 60, y: 60, w: 16, h: 16});
+            this.walls.push({x: 60 + i * 60, y: 260, w: 16, h: 16});
+        }
+
+        // Vine blocking exit
+        this.vine = {x: 320, y: 100, w: 30, h: 120, active: true};
+
+        // Letters Take initials of [Male Character] & [Female Character]
+        const letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
+        const positions = [
+            [40,40], [100,80], [160,40], [220,100], [280,40],
+            [40,140], [100,180], [160,140], [220,180], [280,140],
+            [40,240], [100,280], [160,240], [220,280]
+        ];
+
+        positions.forEach((pos, i) => {
+            this.collectibles.push({
+                x: pos[0], y: pos[1], w: 16, h: 16,
+                type: 'letter', letter: letters[i], bob: Math.random() * Math.PI * 2
+            });
+        });
+
+        // Flower
+        this.collectibles.push({
+            x: 280, y: 200, w: 16, h: 16,
+            type: 'flower', bob: 0
+        });
+
+        // NPC [Male Character]
+        this.npc = {x: 340, y: 140, w: 18, h: 22, talked: false};
+
+        currentHint = "Collect letters! Find the pink flower to remove thorns blocking [Male Character].";
+        updateObjective("Collect Letters: 0/14");
+    }
+
+    setupLevel2() {
+        // Maze walls
+        const maze = [
+            {x: 80, y: 80, w: 16, h: 80}, {x: 160, y: 60, w: 16, h: 100},
+            {x: 240, y: 80, w: 16, h: 120}, {x: 320, y: 60, w: 16, h: 80},
+            {x: 80, y: 200, w: 120, h: 16}, {x: 280, y: 220, w: 80, h: 16}
+        ];
+        maze.forEach(w => this.walls.push(w));
+
+        // Enemies
+        this.enemies = [
+            {x: 120, y: 120, w: 20, h: 20, hp: 2, dx: 1, timer: 0, frame: 0},
+            {x: 200, y: 160, w: 20, h: 20, hp: 2, dx: -1, timer: 0, frame: 0},
+            {x: 280, y: 120, w: 20, h: 20, hp: 2, dx: 1, timer: 0, frame: 0},
+            {x: 120, y: 240, w: 20, h: 20, hp: 2, dx: -1, timer: 0, frame: 0},
+            {x: 320, y: 160, w: 20, h: 20, hp: 2, dx: 1, timer: 0, frame: 0}
+        ];
+
+        this.npc = {x: 340, y: 260, w: 18, h: 22, talked: false};
+        currentHint = "Shoot dark clouds with ACTION button! Clear all 5 to proceed.";
+        updateObjective("Defeat Enemies: 0/5");
+    }
+
+    setupLevel3() {
+        // Chasm that blocks the path — bridge gets built by answering MCQ questions
+        this.chasm = {x: 160, y: 60, w: 60, h: 200};
+
+        // Terminal ('?' block) — player must walk here and press ACTION to start the quiz
+        this.terminal = {x: 80, y: 150, w: 20, h: 20, used: false};
+
+        // Boss (EGO) — appears after bridge is built and player crosses right side
+        this.boss = {x: 300, y: 120, w: 30, h: 30, active: false};
+
+        // Fix: npc removed from Level 3 — no male character should stand at the female's starting position
+        // npc2 is spawned dynamically during the boss cutscene (see actionButton → Level 3 boss trigger)
+        this.npc = null;
+        
+        currentHint = "Go to '?' block and press ACTION to answer questions. Build the bridge!";
+        updateObjective("Answer Questions: 0/5");
+    }
+
+    checkWall(x, y, w, h) {
+        const rect = {x, y, w, h};
+        
+        for (let wall of this.walls) {
+            if (this.rectIntersect(rect, wall)) return true;
+        }
+
+        if (this.vine && this.vine.active && this.rectIntersect(rect, this.vine)) {
+            return true;
+        }
+
+        if (this.num === 3 && this.chasm) {
+            const bridgeW = this.bridgeBlocks * 12;
+            const bridgeX = this.chasm.x + (this.chasm.w - bridgeW) / 2;
+            
+            if (x + w > this.chasm.x && x < this.chasm.x + this.chasm.w) {
+                if (y + h > this.chasm.y && y < this.chasm.y + this.chasm.h) {
+                    if (x + w/2 < bridgeX || x + w/2 > bridgeX + bridgeW) return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    rectIntersect(r1, r2) {
+        return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x ||
+                 r2.y > r1.y + r1.h || r2.y + r2.h < r1.y);
+    }
+
+    update() {
+        // Update collectibles
+        this.collectibles.forEach(c => {
+            c.bob += 0.1;
+        });
+
+        // Update enemies (Level 2)
+        if (this.num === 2) {
+            this.enemies.forEach(e => {
+                e.timer++;
+                e.x += e.dx * 0.8;
+                e.frame = Math.floor(e.timer / 10) % 2;
+                
+                if (e.timer > 80) {
+                    e.dx *= -1;
+                    e.timer = 0;
+                }
+
+                // Collision with player
+                if (this.rectIntersect(e, gameData.player)) {
+                    gameData.player.x += e.dx * 10;
+                    gameData.screenShake = 5;
+                }
+            });
+        }
+
+        // Update projectiles
+        this.projectiles = this.projectiles.filter(p => {
+            p.x += p.dx;
+            p.life--;
+            
+            // Hit enemies
+            if (this.num === 2) {
+                for (let e of this.enemies) {
+                    if (e.hp <= 0) continue; // already dead this frame, skip
+                    if (this.rectIntersect(p, e)) {
+                        e.hp--;
+                        gameData.screenShake = 3;
+                        if (e.hp <= 0) {
+                            this.enemies = this.enemies.filter(en => en !== e);
+                            updateObjective(`Defeat Enemies: ${5 - this.enemies.length}/5`);
+                            if (this.enemies.length === 0) {
+                                currentHint = "All enemies defeated! Go to [Male Character] at bottom-right.";
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            
+            return p.life > 0;
+        });
+
+        // Check collectible collection
+        this.collectibles = this.collectibles.filter(c => {
+            if (this.rectIntersect(gameData.player, c)) {
+                if (c.type === 'letter') {
+                    gameData.player.letters.push(c.letter);
+                    updateObjective(`Collect Letters: ${gameData.player.letters.length}/14`);
+                    document.getElementById('letters-count').textContent = `${gameData.player.letters.length}/14`;
+                    //Change the length of letters to any number you want to test the hint for collecting all letters
+                    if (gameData.player.letters.length === 14) {
+                        currentHint = "All letters collected! Now find the pink flower.";
+                    }
+                } else if (c.type === 'flower') {
+                    gameData.player.hasFlower = true;
+                    currentHint = "You got the flower! Take it to the thorny vine on the right.";
+                }
+                return false;
+            }
+            return true;
+        });
+    }
+
+    draw(ctx) {
+        // Background
+        if (this.num === 1) {
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, 280, GAME_WIDTH, 40);
+        } else if (this.num === 2) {
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            // Rain
+            ctx.strokeStyle = 'rgba(200,200,255,0.2)';
+            for (let i = 0; i < 30; i++) {
+                const rx = Math.random() * GAME_WIDTH;
+                const ry = Math.random() * GAME_HEIGHT;
+                ctx.beginPath();
+                ctx.moveTo(rx, ry);
+                ctx.lineTo(rx-2, ry+8);
+                ctx.stroke();
+            }
+        } else {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
+
+        // Draw walls
+        ctx.fillStyle = this.num === 1 ? '#228B22' : '#34495e';
+        this.walls.forEach(w => {
+            ctx.fillRect(w.x, w.y, w.w, w.h);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(w.x, w.y-3, w.w, 3);
+            ctx.fillStyle = this.num === 1 ? '#228B22' : '#34495e';
+        });
+
+        // Draw vine
+        if (this.vine && this.vine.active) {
+            ctx.fillStyle = '#8B0000';
+            ctx.fillRect(this.vine.x, this.vine.y, this.vine.w, this.vine.h);
+            for (let i = 0; i < 6; i++) {
+                ctx.fillRect(this.vine.x-4, this.vine.y + i*20, 4, 4);
+                ctx.fillRect(this.vine.x+this.vine.w, this.vine.y + i*20, 4, 4);
+            }
+        }
+
+        // Draw chasm & bridge
+        if (this.num === 3 && this.chasm) {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.chasm.x, this.chasm.y, this.chasm.w, this.chasm.h);
+            
+            const bridgeW = this.bridgeBlocks * 12;
+            const bridgeX = this.chasm.x + (this.chasm.w - bridgeW) / 2;
+            if (bridgeW > 0) {
+                ctx.fillStyle = '#D2691E';
+                ctx.fillRect(bridgeX, this.chasm.y + 80, bridgeW, 8);
+            }
+        }
+
+        // Draw terminal
+        if (this.terminal && !this.terminal.used) {
+            ctx.fillStyle = '#00CED1';
+            ctx.fillRect(this.terminal.x, this.terminal.y, this.terminal.w, this.terminal.h);
+            ctx.fillStyle = '#000';
+            ctx.font = '12px monospace';
+            ctx.fillText('?', this.terminal.x+6, this.terminal.y+14);
+        }
+
+        // Draw boss
+        if (this.boss && this.boss.active) {
+            ctx.fillStyle = '#8B0000';
+            ctx.fillRect(this.boss.x, this.boss.y, this.boss.w, this.boss.h);
+            ctx.fillStyle = '#fff';
+            ctx.font = '8px monospace';
+            ctx.fillText('EGO', this.boss.x+5, this.boss.y+18);
+        }
+
+        // Draw collectibles
+        this.collectibles.forEach(c => {
+            const yOff = Math.sin(c.bob) * 3;
+            if (c.type === 'letter') {
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(c.x+8, c.y+8+yOff, 8, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = '#FFA500';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(c.letter, c.x+8, c.y+12+yOff);
+            } else if (c.type === 'flower') {
+                const yo = Math.sin(c.bob) * 4;
+                ctx.fillStyle = '#FF69B4';
+                for (let i = 0; i < 5; i++) {
+                    const ang = (i/5) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.arc(c.x+8+Math.cos(ang)*5, c.y+8+yo+Math.sin(ang)*5, 4, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                ctx.fillStyle = '#FFFF00';
+                ctx.beginPath();
+                ctx.arc(c.x+8, c.y+8+yo, 3, 0, Math.PI*2);
+                ctx.fill();
+            }
+        });
+
+        // Draw enemies
+        this.enemies.forEach(e => {
+            const bob = (e.frame === 1) ? 2 : 0;
+            ctx.fillStyle = '#2c3e50';
+            ctx.beginPath();
+            ctx.arc(e.x+10, e.y+10+bob, 10, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(e.x+4, e.y+6+bob, 3, 3);
+            ctx.fillRect(e.x+13, e.y+6+bob, 3, 3);
+        });
+
+        // Draw projectiles
+        this.projectiles.forEach(p => {
+            ctx.fillStyle = '#FF1493';
+            ctx.beginPath();
+            ctx.arc(p.x+6, p.y+6, 5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(p.x+4, p.y+4, 2, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Draw NPCs
+        if (this.npc) this.drawCharacter(ctx, this.npc.x, this.npc.y, '[Male Character]', 0);
+        if (this.npc2) {
+            const state = this.npc2.state || 'normal';
+            this.drawCharacter(ctx, this.npc2.x, this.npc2.y, '[Male Character]', 0, state);
+        }
+    }
+
+    drawCharacter(ctx, x, y, type, frame, state = 'normal') {
+        const bob = frame * 2;
+        const kneel = state === 'kneeling' ? 8 : 0;
+        
+        ctx.save();
+        ctx.translate(x, y + kneel);
+
+        // Body
+        ctx.fillStyle = type === '[Male Character]' ? '#20B2AA' : '#FF69B4';
+        ctx.fillRect(-7, 5+bob, 14, 12);
+
+        // Head
+        ctx.fillStyle = '#FDBCB4';
+        ctx.fillRect(-6, -10+bob, 12, 12);
+
+        // Hair
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-8, -12+bob, 16, 6);
+
+        // Face
+        if (state === 'kneeling') {
+            // Sad face with tears
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-3, -4+bob, 2, 2);
+            ctx.fillRect(1, -4+bob, 2, 2);
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(-4, -1+bob, 2, 4);
+            ctx.fillRect(2, -1+bob, 2, 4);
+        } else {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-3, -4+bob, 2, 2);
+            ctx.fillRect(1, -4+bob, 2, 2);
+        }
+
+        ctx.restore();
+    }
+}
+
+// ============================================================
+// DIALOGUE SYSTEM
+// Handles typewriter-style text reveal, speaker name display,
+// and a queue so multiple lines can be chained together.
+//
+// Fix applied: DOM elements are cached once at init time, and
+// the displayed string is tracked in JS (this.displayed) rather
+// than reading textContent back from the DOM each tick.
+// This eliminates the per-frame DOM read+write that caused
+// micro-freezes during dialogue delivery.
+// ============================================================
+const dialogue = {
+    queue: [],       // Pending dialogue entries not yet displayed
+    current: null,   // The dialogue object currently being shown
+    text: '',        // Full text of current line
+    displayed: '',   // Characters revealed so far (JS-side, avoids DOM reads)
+    index: 0,        // How many characters have been revealed
+    timer: 0,        // Frame counter between character reveals
+
+    // Cached DOM references — looked up once, reused every frame (no repeated getElementById)
+    _box: null,
+    _speaker: null,
+    _textEl: null,
+
+    // Call once before the game loop starts to cache DOM elements
+    initDOM() {
+        this._box     = document.getElementById('dialogue-box');
+        this._speaker = document.getElementById('dialogue-speaker');
+        this._textEl  = document.getElementById('dialogue-text');
+    },
+
+    // Queue a new dialogue line; starts immediately if nothing is showing
+    show(speaker, text) {
+        this.queue.push({speaker, text});
+        if (!this.current) this.next();
+    },
+
+    // Advance to the next queued line, or close the box if queue is empty
+    next() {
+        if (this.queue.length === 0) {
+            this.current = null;
+            this._box.classList.remove('active');
+            // Only restore to PLAYING if we were in a DIALOGUE state
+            if (gameData.state === STATE.DIALOGUE) {
+                gameData.state = STATE.PLAYING;
+            }
+            return;
+        }
+
+        this.current   = this.queue.shift();
+        this.text      = this.current.text;
+        this.displayed = '';   // Reset JS-side string
+        this.index     = 0;
+        this.timer     = 0;
+
+        // Update DOM once at the start of a new line
+        this._box.classList.add('active');
+        this._speaker.textContent = this.current.speaker;
+        this._textEl.textContent  = '';  // Clear previous text immediately
+        gameData.state = STATE.DIALOGUE;
+    },
+
+    // Called every game loop frame — reveals one character at a time
+    // Writing this.displayed to the DOM once per reveal (not every frame)
+    // keeps the render thread free and prevents micro-stutter.
+    update() {
+        if (!this.current) return;
+        if (this.index >= this.text.length) return; // All revealed, wait for advance()
+
+        this.timer++;
+        // Reveal one character every 3 frames (~50ms at 60fps) for comfortable reading
+        if (this.timer >= 3) {
+            this.timer = 0;
+            this.displayed += this.text[this.index];
+            this.index++;
+            // Single DOM write per reveal — no re-read of textContent
+            this._textEl.textContent = this.displayed;
+        }
+    },
+
+    // Called when the player presses ACTION during dialogue:
+    // First press: instantly shows full text.
+    // Second press: moves to next queued line.
+    advance() {
+        if (this.index < this.text.length) {
+            // Skip typewriter — show everything at once
+            this.displayed = this.text;
+            this.index     = this.text.length;
+            this._textEl.textContent = this.displayed;
+        } else {
+            // Text fully shown — go to next line
+            this.next();
+        }
+    }
+};
+
+// MCQ System
+const mcq = {
+    questions: [
+        {q: "Question 1?", options: ["Correct", "Wrong", "Wrong", "Wrong"], correct: 0},
+        {q: "Question 2?", options: ["Correct", "Wrong", "Wrong", "Wrong"], correct: 0},
+        {q: "Question 3?", options: ["Correct", "Wrong", "Wrong", "Wrong"], correct: 0},
+        {q: "Question 4?", options: ["Correct", "Wrong", "Wrong", "Wrong"], correct: 0},
+        {q: "Question 5?", options: ["Correct", "Wrong", "Wrong", "Wrong"], correct: 0}
+    ],
+    current: 0,
+
+    start() {
+        this.current = 0;
+        this.show();
+        gameData.state = STATE.MCQ;
+    },
+
+    show() {
+        if (this.current >= this.questions.length) {
+            document.getElementById('mcq-modal').classList.remove('active');
+            gameData.levelData.bridgeComplete = true;
+            currentHint = "Bridge complete! Cross over to meet [Male Character].";
+            gameData.state = STATE.PLAYING;
+            return;
+        }
+
+        const q = this.questions[this.current];
+        document.getElementById('mcq-question').textContent = `Q${this.current+1}/5: ${q.q}`;
+        document.getElementById('mcq-progress').style.width = `${(this.current/5)*100}%`;
+        
+        const opts = document.getElementById('mcq-options');
+        opts.innerHTML = '';
+        
+        q.options.forEach((opt, i) => {
+            const btn = document.createElement('div');
+            btn.className = 'mcq-option';
+            btn.textContent = opt;
+            btn.onclick = () => this.answer(i, btn);
+            opts.appendChild(btn);
+        });
+
+        document.getElementById('mcq-modal').classList.add('active');
+    },
+
+    answer(idx, btn) {
+        const q = this.questions[this.current];
+        if (idx === q.correct) {
+            btn.style.background = '#27ae60';
+            gameData.levelData.bridgeBlocks++;
+            updateObjective(`Bridge: ${gameData.levelData.bridgeBlocks}/5 blocks`);
+            setTimeout(() => {
+                this.current++;
+                this.show();
+            }, 500);
+        } else {
+            btn.style.background = '#e74c3c';
+            gameData.screenShake = 15;
+            setTimeout(() => {
+                btn.style.background = '';
+            }, 500);
+        }
+    }
+};
+
+// Game Functions
+const game = {
+    init() {
+        // Cache dialogue DOM elements once at startup for zero-jank text delivery
+        dialogue.initDOM();
+
+        // Typewriter intro
+        const text = "Insert your custom dialogue 1\n\nInsert your custom dialogue 2";
+        
+        let i = 0;
+        const el = document.getElementById('intro-text');
+        const type = () => {
+            if (i < text.length) {
+                el.textContent += text[i] === '\n' ? '\n' : text[i];
+                i++;
+                setTimeout(type, 50);
+            }
+        };
+        type();
+
+        // Keyboard controls
+        let actionKeyDown = false;
+        window.addEventListener('keydown', (e) => {
+            if (gameData.state === STATE.PLAYING) {
+                switch(e.key) {
+                    case 'ArrowUp': input.up = true; break;
+                    case 'ArrowDown': input.down = true; break;
+                    case 'ArrowLeft': input.left = true; break;
+                    case 'ArrowRight': input.right = true; break;
+                    case ' ': 
+                    case 'Enter':
+                        if (!actionKeyDown) {
+                            actionKeyDown = true;
+                            this.actionButton();
+                        }
+                        break;
+                }
+            } else if (gameData.state === STATE.DIALOGUE && (e.key === ' ' || e.key === 'Enter')) {
+                dialogue.advance();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': input.up = false; break;
+                case 'ArrowDown': input.down = false; break;
+                case 'ArrowLeft': input.left = false; break;
+                case 'ArrowRight': input.right = false; break;
+                case ' ':
+                case 'Enter': actionKeyDown = false; break;
+            }
+        });
+
+        this.loop();
+    },
+
+    startGame() {
+        document.getElementById('intro-screen').classList.remove('active');
+        document.getElementById('tutorial-modal').classList.remove('active');
+        this.startLevel(1);
+    },
+
+    startLevel(num) {
+        gameData.level = num;
+        gameData.levelData = new Level(num);
+        gameData.player = new Player(40, num === 2 ? 40 : 150);
+        gameData.state = STATE.LEVEL_START;
+        
+        document.getElementById('current-level').textContent = num;
+
+        // Fix: Update the level guide button label to match the current level (e.g. "📖 Level 2 Guide")
+        document.getElementById('level-guide-btn').textContent = `📖 Level ${num} Guide`;
+
+        // Show letters counter only in Level 1
+        document.getElementById('letters-count').style.display = num === 1 ? '' : 'none';
+        
+        const guide = levelGuides[num];
+        document.getElementById('alert-title').textContent = guide.title;
+        document.getElementById('alert-text').innerHTML = `
+            <strong>Objective:</strong> ${guide.objective}<br><br>
+            <strong>Quick Tips:</strong><br>
+            ${guide.steps[0]}<br>
+            ${guide.steps[1]}<br><br>
+            <em>Press GUIDE button anytime for detailed help!</em>
+        `;
+        document.getElementById('level-alert').classList.add('active');
+    },
+
+    dismissAlert() {
+        document.getElementById('level-alert').classList.remove('active');
+        gameData.state = STATE.PLAYING;
+    },
+
+    actionButton() {
+        if (gameData.state === STATE.DIALOGUE) {
+            dialogue.advance();
+            return;
+        }
+
+        if (gameData.state !== STATE.PLAYING) return;
+
+        const p = gameData.player;
+        const l = gameData.levelData;
+        const c = p.getCenter();
+
+        // Level 1: Vine interaction
+        if (l.num === 1 && l.vine && l.vine.active) {
+            if (distance(c.x, c.y, l.vine.x + 15, l.vine.y + 60) < 50) {
+                if (p.hasFlower) {
+                    l.vine.active = false;
+                    dialogue.show('System', 'The flower melts the thorns! 💐');
+                } else {
+                    dialogue.show('System', 'Need a flower to remove these thorns! 🌹');
+                }
+                return;
+            }
+        }
+
+        // Level 1: NPC
+        if (l.num === 1 && l.npc && !l.npc.talked && !l.vine.active) {
+            if (distance(c.x, c.y, l.npc.x + 9, l.npc.y + 11) < 40) {
+                l.npc.talked = true;
+                dialogue.show('[Male Character]', 'Insert your custom dialogue');
+                setTimeout(() => this.nextLevel(), 5000);
+                return;
+            }
+        }
+
+        // Level 2: Shoot
+        if (l.num === 2) {
+            l.projectiles.push({
+                x: c.x - 6, y: c.y - 6, w: 12, h: 12,
+                dx: p.facing * 6, life: 60
+            });
+            
+            if (l.enemies.length === 0 && l.npc && !l.npc.talked) {
+                if (distance(c.x, c.y, l.npc.x + 9, l.npc.y + 11) < 40) {
+                    l.npc.talked = true;
+                    dialogue.show('[Male Character]', 'Insert your custom dialogue');
+                    setTimeout(() => {
+                        dialogue.show('[Male Character]', 'Insert your custom dialogue');
+                        setTimeout(() => this.nextLevel(), 4000);
+                    }, 4000);
+                }
+            }
+            return;
+        }
+
+        // Level 3: Terminal
+        if (l.num === 3 && l.terminal && !l.terminal.used) {
+            if (distance(c.x, c.y, l.terminal.x + 10, l.terminal.y + 10) < 40) {
+                l.terminal.used = true;
+                mcq.start();
+                return;
+            }
+        }
+
+        // Level 3: Trigger boss
+        if (l.num === 3 && l.bridgeComplete && !l.boss.active && !l.bossDefeated) {
+            if (p.x > 200) {
+                l.boss.active = true;
+                dialogue.show('System', '[Male Character] EGO appears! 😈');
+                
+                setTimeout(() => {
+                    l.npc2 = {x: 180, y: 150, state: 'running'};
+                    let step = 0;
+                    const run = setInterval(() => {
+                        if (step < 10) {
+                            l.npc2.x += 8;
+                            step++;
+                        } else {
+                            clearInterval(run);
+                            l.bossDefeated = true;
+                            l.boss.active = false;
+                            l.npc2.state = 'kneeling';
+                            dialogue.show('[Male Character]', 'Insert your custom dialogue');
+                            setTimeout(() => {
+                                dialogue.show('System', '[Male Character] has defeated his ego. What is your decision? 💕');
+                            }, 4000);
+                        }
+                    }, 100);
+                }, 2000);
+                return;
+            }
+        }
+
+        // Level 3: Final choice
+        if (l.num === 3 && l.bossDefeated && l.npc2) {
+            if (distance(c.x, c.y, l.npc2.x + 9, l.npc2.y + 11) < 50) {
+                this.showEndScreen();
+            }
+        }
+    },
+
+    nextLevel() {
+        if (gameData.level < 3) {
+            setTimeout(() => this.startLevel(gameData.level + 1), 1000);
+        }
+    },
+
+    showEndScreen() {
+        gameData.state = STATE.END;
+        document.getElementById('end-screen').classList.add('active');
+    },
+
+    makeChoice(forgive) {
+        const title = document.getElementById('end-title');
+        const text = document.getElementById('end-text');
+        const choices = document.getElementById('end-choices');
+        const restart = document.getElementById('end-restart');
+
+        choices.style.display = 'none';
+        restart.style.display = 'flex';
+
+        if (forgive) {
+            title.textContent = '❤️ Happily Ever After ❤️';
+            text.textContent = 'Insert your custom dialogue';
+        } else {
+            title.textContent = '⏳ A Promise to Wait ⏳';
+            text.textContent = 'Insert your custom dialogue';
+        }
+    },
+
+    showHint() {
+        document.getElementById('hint-text').textContent = currentHint;
+        document.getElementById('hint-box').classList.add('active');
+        this._stateBeforeHint = gameData.state;
+        gameData.state = STATE.PAUSED;
+    },
+
+    closeHint() {
+        document.getElementById('hint-box').classList.remove('active');
+        gameData.state = this._stateBeforeHint !== undefined ? this._stateBeforeHint : STATE.PLAYING;
+        this._stateBeforeHint = undefined;
+    },
+
+    showTutorial() {
+        document.getElementById('intro-screen').classList.remove('active');
+        document.getElementById('tutorial-modal').classList.add('active');
+    },
+
+    hideTutorial() {
+        document.getElementById('tutorial-modal').classList.remove('active');
+        document.getElementById('intro-screen').classList.add('active');
+    },
+
+    showGuide() {
+        const guide = levelGuides[gameData.level];
+        let html = `<h2>${guide.title}</h2>`;
+        html += `<p><strong>Objective:</strong> ${guide.objective}</p>`;
+        html += `<h3>Step by Step:</h3><ol>`;
+        guide.steps.forEach(step => {
+            html += `<li>${step}</li>`;
+        });
+        html += `</ol><p><strong>Pro Tip:</strong> ${guide.tips}</p>`;
+        
+        document.getElementById('guide-full').innerHTML = html;
+        document.getElementById('pause-modal').classList.add('active');
+        this._stateBeforeGuide = gameData.state;
+        gameData.state = STATE.PAUSED;
+    },
+
+    showLevelGuide() {
+        const guide = levelGuides[gameData.level];
+        let html = `<h2>${guide.title}</h2>`;
+        html += `<p><strong>Objective:</strong> ${guide.objective}</p>`;
+        html += `<h3>Detailed Steps:</h3><ol>`;
+        guide.steps.forEach(step => {
+            html += `<li>${step}</li>`;
+        });
+        html += `</ol><p><strong>Tip:</strong> ${guide.tips}</p>`;
+        
+        document.getElementById('guide-content').innerHTML = html;
+        document.getElementById('level-guide').classList.add('active');
+    },
+
+    hideLevelGuide() {
+        document.getElementById('level-guide').classList.remove('active');
+    },
+
+    resume() {
+        document.getElementById('pause-modal').classList.remove('active');
+        gameData.state = this._stateBeforeGuide !== undefined ? this._stateBeforeGuide : STATE.PLAYING;
+        this._stateBeforeGuide = undefined;
+    },
+
+    restart() {
+        location.reload();
+    },
+
+    loop() {
+        const now = Date.now();
+        const dt = now - gameData.lastTime;
+        gameData.lastTime = now;
+
+        // Update
+        if (gameData.state === STATE.PLAYING && gameData.player) {
+            gameData.player.update();
+            gameData.levelData.update();
+        }
+        dialogue.update();
+
+        // Screen shake
+        if (gameData.screenShake > 0) {
+            gameData.screenShake *= 0.9;
+            if (gameData.screenShake < 0.5) gameData.screenShake = 0;
+        }
+
+        // Draw
+        ctx.save();
+        
+        if (gameData.screenShake > 0) {
+            ctx.translate(
+                (Math.random() - 0.5) * gameData.screenShake,
+                (Math.random() - 0.5) * gameData.screenShake
+            );
+        }
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+        if (gameData.levelData) {
+            gameData.levelData.draw(ctx);
+        }
+
+        if (gameData.player && gameData.state !== STATE.END) {
+            gameData.player.draw(ctx);
+        }
+
+        ctx.restore();
+
+        requestAnimationFrame(() => this.loop());
+    }
+};
+
+// ── Utility ──────────────────────────────────────────────────
+// Euclidean distance between two points — used for proximity
+// checks (player near NPC, projectile near enemy, etc.)
+function distance(x1, y1, x2, y2) {
+    return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+}
+
+// Updates the objective text in the status bar at the top of screen
+function updateObjective(text) {
+    document.getElementById('current-objective').textContent = text;
+}
+
+// ── Button Setup ─────────────────────────────────────────────
+// Wires up the on-screen D-pad buttons to the input state.
+// Uses addEventListener with {passive: false} so preventDefault()
+// works on mobile Chrome (stops page scroll while playing).
+// mousedown/mouseup/mouseleave cover desktop testing.
+function setupButtons() {
+    const buttons = [
+        ['btn-up', 'up'], ['btn-down', 'down'],
+        ['btn-left', 'left'], ['btn-right', 'right']
+    ];
+
+    buttons.forEach(([id, key]) => {
+        const btn = document.getElementById(id);
+        
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            input[key] = true;
+            btn.classList.add('pressed');
+        }, {passive: false});
+
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            input[key] = false;
+            btn.classList.remove('pressed');
+        }, {passive: false});
+
+        btn.addEventListener('mousedown', () => {
+            input[key] = true;
+            btn.classList.add('pressed');
+        });
+
+        btn.addEventListener('mouseup', () => {
+            input[key] = false;
+            btn.classList.remove('pressed');
+        });
+
+        btn.addEventListener('mouseleave', () => {
+            input[key] = false;
+            btn.classList.remove('pressed');
+        });
+    });
+}
+
+// Prevent zoom on double tap
+document.addEventListener('dblclick', (e) => e.preventDefault());
+
+// Initialize
+setupButtons();
+game.init();
+</script>
+</body>
+</html>
